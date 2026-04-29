@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source Code Scanner</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h1>Source Code Scanner</h1>
+            </div>
+            <div class="scan-stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="todayScans">0</div>
+                    <div class="stat-label">Today's Scans</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalScans">0</div>
+                    <div class="stat-label">Total Scans</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Scan Tabs -->
+        <div class="scan-tabs">
+            <button class="tab-btn active" data-tab="uploadPanel">
+                <i class="fas fa-upload"></i>
+                Upload File
+            </button>
+            <button class="tab-btn" data-tab="pastePanel">
+                <i class="fas fa-code"></i>
+                Paste Code
+            </button>
+            <button class="tab-btn" data-tab="githubPanel">
+                <i class="fab fa-github"></i>
+                GitHub URL
+            </button>
+        </div>
+
+        <!-- Upload Panel -->
+        <div class="scan-panel active" id="uploadPanel">
+            <div class="upload-area" id="uploadArea">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <h3>Choose a file or drag it here</h3>
+                <p>Supported languages: Python, JavaScript, PHP, Java, C/C++, Go, Ruby, Rust, Swift, Kotlin, TypeScript</p>
+                <p class="upload-hint">Maximum file size: 5MB</p>
+                <input type="file" id="fileInput" style="display: none;" accept=".py,.js,.php,.java,.cpp,.c,.go,.rb,.rs,.swift,.kt,.ts">
+            </div>
+            <div class="file-info" id="fileInfo" style="display: none;"></div>
+            <button class="scan-btn" id="uploadScanBtn" onclick="scanUpload()" disabled>
+                <i class="fas fa-shield-alt"></i>
+                Scan File
+            </button>
+        </div>
+
+        <!-- Paste Panel -->
+        <div class="scan-panel" id="pastePanel">
+            <div class="code-editor">
+                <div class="editor-header">
+                    <div class="language-selector">
+                        <i class="fas fa-code"></i>
+                        <select id="languageSelect">
+                            <option value="py">Python</option>
+                            <option value="js">JavaScript</option>
+                            <option value="php">PHP</option>
+                            <option value="java">Java</option>
+                            <option value="cpp">C++</option>
+                            <option value="c">C</option>
+                            <option value="go">Go</option>
+                            <option value="rb">Ruby</option>
+                            <option value="rs">Rust</option>
+                        </select>
+                    </div>
+                    <div class="editor-actions">
+                        <button class="icon-btn" onclick="copyCode()" title="Copy code">
+                            <i class="fas fa-copy"></i>
+                        </button>
+                        <button class="icon-btn" onclick="clearCode()" title="Clear code">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <textarea id="codeTextarea" placeholder="Paste your source code here..."></textarea>
+            </div>
+            <button class="scan-btn" onclick="scanPaste()">
+                <i class="fas fa-shield-alt"></i>
+                Scan Code
+            </button>
+        </div>
+
+        <!-- GitHub Panel -->
+        <div class="scan-panel" id="githubPanel">
+            <div class="url-input-group">
+                <input type="url" id="githubUrl" placeholder="https://github.com/username/repo/blob/main/file.py" autocomplete="off">
+                <button onclick="scanGitHub()">
+                    <i class="fas fa-search"></i>
+                    Fetch & Scan
+                </button>
+            </div>
+            <div class="url-examples">
+                <span>Examples:</span>
+            </div>
+            <p class="upload-hint" style="margin-top: 1rem;">
+                <i class="fas fa-info-circle"></i>
+                Enter the URL of a public GitHub file. The file will be fetched and scanned automatically.
+            </p>
+        </div>
+
+        <!-- Results Dashboard -->
+        <div class="results-dashboard" id="resultsDashboard" style="display: none;">
+            <div class="dashboard-header">
+                <h2>
+                    <i class="fas fa-chart-bar" style="color: var(--accent-primary);"></i>
+                    Security Report
+                </h2>
+                <div class="dashboard-actions">
+                    <button class="icon-btn" onclick="downloadJSON()" title="Download as JSON">
+                        <i class="fas fa-download"></i>
+                    </button>
+                    <button class="icon-btn" onclick="window.location.reload()" title="New Scan">
+                        <i class="fas fa-redo"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="summary-cards">
+                <div class="summary-card">
+                    <div class="card-icon">
+                        <i class="fas fa-bug"></i>
+                    </div>
+                    <div class="card-value" id="totalVulns">0</div>
+                    <div class="card-label">Total Vulnerabilities</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon">
+                        <i class="fas fa-skull" style="color: #ff4444;"></i>
+                    </div>
+                    <div class="card-value" id="criticalCount">0</div>
+                    <div class="card-label">Critical</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon">
+                        <i class="fas fa-exclamation-triangle" style="color: #ff6b00;"></i>
+                    </div>
+                    <div class="card-value" id="highCount">0</div>
+                    <div class="card-label">High</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon">
+                        <i class="fas fa-exclamation-circle" style="color: #ffb800;"></i>
+                    </div>
+                    <div class="card-value" id="mediumCount">0</div>
+                    <div class="card-label">Medium</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon">
+                        <i class="fas fa-info-circle" style="color: #ffee00;"></i>
+                    </div>
+                    <div class="card-value" id="lowCount">0</div>
+                    <div class="card-label">Low</div>
+                </div>
+                <div class="summary-card">
+                    <div class="card-icon">
+                        <i class="fas fa-info" style="color: #00b8ff;"></i>
+                    </div>
+                    <div class="card-value" id="infoCount">0</div>
+                    <div class="card-label">Info</div>
+                </div>
+            </div>
+
+            <!-- Vulnerabilities Table -->
+            <div class="vulnerabilities-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Severity</th>
+                            <th>Vulnerability</th>
+                            <th>Location</th>
+                            <th>Description</th>
+                            <th>Fix</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vulnerabilitiesBody">
+                        <tr>
+                            <td colspan="5" style="text-align: center;">No vulnerabilities found</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <h3>Scanning Code...</h3>
+            <p>Running security analysis with Semgrep</p>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
